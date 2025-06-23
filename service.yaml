@@ -5,7 +5,7 @@ metadata:
   name: car-racing-service
   namespace: argocd
 spec:
-  type: ClusterIP
+  type: NodePort
   selector:
     app: car-racing
   ports:
