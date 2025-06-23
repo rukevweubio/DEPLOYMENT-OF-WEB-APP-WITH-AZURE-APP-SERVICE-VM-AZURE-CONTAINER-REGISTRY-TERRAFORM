@@ -1,0 +1,29 @@
+# deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: car-racing-app
+  labels:
+    app: car-racing
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: car-racing
+  template:
+    metadata:
+      labels:
+        app: car-racing
+    spec:
+      containers:
+      - name: car-racing
+        image: rukevweubio/car-racing-app:latest
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
