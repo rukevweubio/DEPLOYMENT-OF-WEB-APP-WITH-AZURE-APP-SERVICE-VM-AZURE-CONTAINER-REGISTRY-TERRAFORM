@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Rush - Car Racing Adventure</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .game-container {
+            width: 800px;
+            height: 600px;
+            background: linear-gradient(180deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            position: relative;
+            overflow: hidden;
+            border: 3px solid #00ffff;
+        }
+
+        .game-canvas {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(180deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            position: relative;
+        }
+
+        .road {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 300px;
+            height: 100%;
+            background: linear-gradient(180deg, #2a2a2a 0%, #1a1a1a 100%);
+            border-left: 5px solid #ffff00;
+            border-right: 5px solid #ffff00;
+        }
+
+        .road-lines {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 8px;
+            height: 100%;
+            background: repeating-linear-gradient(
+                to bottom,
+                transparent 0px,
+                transparent 20px,
+                #ffffff 20px,
+                #ffffff 40px
+            );
+            animation: roadMove 0.5s linear infinite;
+        }
+
+        @keyframes roadMove {
+            0% { transform: translateX(-50%) translateY(0); }
+            100% { transform: translateX(-50%) translateY(60px); }
+        }
+
+        .player-car {
+            position: absolute;
+            bottom: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 120px;
+            background: linear-gradient(45deg, #ff0080, #ff8c00);
+            border-radius: 10px 10px 5px 5px;
+            box-shadow: 0 0 20px rgba(255, 0, 128, 0.6);
+            transition: left 0.1s ease;
+            z-index: 10;
+        }
+
+        .player-car::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 30px;
+            background: linear-gradient(45deg, #00ffff, #0080ff);
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.8);
+        }
+
+        .enemy-car {
+            position: absolute;
+            width: 50px;
+            height: 100px;
+            background: linear-gradient(45deg, #ff4444, #cc0000);
+            border-radius: 8px 8px 4px 4px;
+            box-shadow: 0 0 15px rgba(255, 68, 68, 0.5);
+            animation: enemyMove 3s linear infinite;
+        }
+
+        .enemy-car::before {
+            content: '';
+            position: absolute;
+            top: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 30px;
+            height: 20px;
+            background: linear-gradient(45deg, #ffff00, #ff8000);
+            border-radius: 4px;
+        }
+
+        @keyframes enemyMove {
+            0% { top: -120px; }
+            100% { top: 620px; }
+        }
+
+        .collectible {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background: radial-gradient(circle, #ffff00 0%, #ff8000 100%);
+            border-radius: 50%;
+            box-shadow: 0 0 20px rgba(255, 255, 0, 0.8);
+            animation: collectibleMove 4s linear infinite, pulse 0.5s ease-in-out infinite alternate;
+        }
+
+        @keyframes collectibleMove {
+            0% { top: -40px; }
+            100% { top: 620px; }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.2); }
+        }
+
+        .hud {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: #00ffff;
+            font-size: 18px;
+            font-weight: bold;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.8);
+            z-index: 20;
+        }
+
+        .controls {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            color: #ffffff;
+            font-size: 14px;
+            text-align: right;
+            z-index: 20;
+        }
+
+        .game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            color: #ff0080;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            border: 2px solid #ff0080;
+            box-shadow: 0 0 30px rgba(255, 0, 128, 0.5);
+            z-index: 100;
+            display: none;
+        }
+
+        .restart-btn {
+            background: linear-gradient(45deg, #00ffff, #0080ff);
+            color: #000;
+            border: none;
+            padding: 15px 30px;
+            margin-top: 20px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .restart-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.8);
+        }
+
+        .start-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #00ffff;
+            z-index: 50;
+        }
+
+        .title {
+            font-size: 48px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-shadow: 0 0 20px rgba(0, 255, 255, 0.8);
+            animation: titleGlow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes titleGlow {
+            0% { text-shadow: 0 0 20px rgba(0, 255, 255, 0.8); }
+            100% { text-shadow: 0 0 30px rgba(0, 255, 255, 1), 0 0 40px rgba(255, 0, 128, 0.5); }
+        }
+
+        .start-btn {
+            background: linear-gradient(45deg, #ff0080, #ff8c00);
+            color: #fff;
+            border: none;
+            padding: 20px 40px;
+            border-radius: 30px;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 20px rgba(255, 0, 128, 0.5);
+        }
+
+        .start-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 30px rgba(255, 0, 128, 0.8);
+        }
+
+        .stars {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        .star {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: #ffffff;
+            border-radius: 50%;
+            animation: starMove 2s linear infinite;
+        }
+
+        @keyframes starMove {
+            0% { transform: translateY(-10px); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(610px); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="stars" id="stars"></div>
+        
+        <div class="start-screen" id="startScreen">
+            <h1 class="title">NEON RUSH</h1>
+            <p style="margin-bottom: 30px; font-size: 18px;">The Ultimate Car Racing Adventure</p>
+            <button class="start-btn" onclick="startGame()">START RACING</button>
+        </div>
+
+        <div class="game-canvas" id="gameCanvas">
+            <div class="road">
+                <div class="road-lines"></div>
+            </div>
+            
+            <div class="player-car" id="playerCar"></div>
+            
+            <div class="hud" id="hud">
+                <div>Score: <span id="score">0</span></div>
+                <div>Lives: <span id="lives">3</span></div>
+                <div>Level: <span id="level">1</span></div>
+            </div>
+            
+            <div class="controls">
+                <div>Use ARROW KEYS or WASD to move</div>
+                <div>Collect coins • Avoid red cars</div>
+            </div>
+        </div>
+
+        <div class="game-over" id="gameOver">
+            <h2>GAME OVER</h2>
+            <p>Final Score: <span id="finalScore">0</span></p>
+            <button class="restart-btn" onclick="restartGame()">PLAY AGAIN</button>
+        </div>
+    </div>
+
+    <script>
+        class NeonRushGame {
+            constructor() {
+                this.playerCar = document.getElementById('playerCar');
+                this.gameCanvas = document.getElementById('gameCanvas');
+                this.score = 0;
+                this.lives = 3;
+                this.level = 1;
+                this.gameRunning = false;
+                this.playerPosition = 400; // Center position
+                this.enemies = [];
+                this.collectibles = [];
+                this.gameSpeed = 3;
+                this.spawnRate = 0.02;
+                this.collectibleRate = 0.01;
+                
+                this.keys = {};
+                this.bindEvents();
+                this.createStars();
+            }
+
+            bindEvents() {
+                document.addEventListener('keydown', (e) => {
+                    this.keys[e.code] = true;
+                });
+                
+                document.addEventListener('keyup', (e) => {
+                    this.keys[e.code] = false;
+                });
+            }
+
+            createStars() {
+                const starsContainer = document.getElementById('stars');
+                for (let i = 0; i < 50; i++) {
+                    const star = document.createElement('div');
+                    star.className = 'star';
+                    star.style.left = Math.random() * 100 + '%';
+                    star.style.animationDelay = Math.random() * 2 + 's';
+                    star.style.animationDuration = (Math.random() * 3 + 1) + 's';
+                    starsContainer.appendChild(star);
+                }
+            }
+
+            start() {
+                this.gameRunning = true;
+                this.gameLoop();
+            }
+
+            gameLoop() {
+                if (!this.gameRunning) return;
+
+                this.updatePlayer();
+                this.spawnEnemies();
+                this.spawnCollectibles();
+                this.updateEnemies();
+                this.updateCollectibles();
+                this.checkCollisions();
+                this.updateHUD();
+                this.updateLevel();
+
+                requestAnimationFrame(() => this.gameLoop());
+            }
+
+            updatePlayer() {
+                // Movement controls
+                if (this.keys['ArrowLeft'] || this.keys['KeyA']) {
+                    this.playerPosition = Math.max(265, this.playerPosition - 5);
+                }
+                if (this.keys['ArrowRight'] || this.keys['KeyD']) {
+                    this.playerPosition = Math.min(535, this.playerPosition + 5);
+                }
+
+                this.playerCar.style.left = this.playerPosition + 'px';
+            }
+
+            spawnEnemies() {
+                if (Math.random() < this.spawnRate) {
+                    const enemy = document.createElement('div');
+                    enemy.className = 'enemy-car';
+                    enemy.style.left = (Math.random() * 250 + 275) + 'px';
+                    enemy.style.top = '-120px';
+                    enemy.style.animationDuration = (4 - this.gameSpeed * 0.5) + 's';
+                    this.gameCanvas.appendChild(enemy);
+                    this.enemies.push(enemy);
+                }
+            }
+
+            spawnCollectibles() {
+                if (Math.random() < this.collectibleRate) {
+                    const collectible = document.createElement('div');
+                    collectible.className = 'collectible';
+                    collectible.style.left = (Math.random() * 250 + 285) + 'px';
+                    collectible.style.top = '-40px';
+                    collectible.style.animationDuration = (5 - this.gameSpeed * 0.5) + 's';
+                    this.gameCanvas.appendChild(collectible);
+                    this.collectibles.push(collectible);
+                }
+            }
+
+            updateEnemies() {
+                this.enemies = this.enemies.filter(enemy => {
+                    const rect = enemy.getBoundingClientRect();
+                    if (rect.top > window.innerHeight) {
+                        enemy.remove();
+                        this.score += 10;
+                        return false;
+                    }
+                    return true;
+                });
+            }
+
+            updateCollectibles() {
+                this.collectibles = this.collectibles.filter(collectible => {
+                    const rect = collectible.getBoundingClientRect();
+                    if (rect.top > window.innerHeight) {
+                        collectible.remove();
+                        return false;
+                    }
+                    return true;
+                });
+            }
+
+            checkCollisions() {
+                const playerRect = this.playerCar.getBoundingClientRect();
+
+                // Check enemy collisions
+                this.enemies.forEach((enemy, index) => {
+                    const enemyRect = enemy.getBoundingClientRect();
+                    if (this.isColliding(playerRect, enemyRect)) {
+                        enemy.remove();
+                        this.enemies.splice(index, 1);
+                        this.lives--;
+                        this.flashScreen();
+                        
+                        if (this.lives <= 0) {
+                            this.gameOver();
+                        }
+                    }
+                });
+
+                // Check collectible collisions
+                this.collectibles.forEach((collectible, index) => {
+                    const collectibleRect = collectible.getBoundingClientRect();
+                    if (this.isColliding(playerRect, collectibleRect)) {
+                        collectible.remove();
+                        this.collectibles.splice(index, 1);
+                        this.score += 50;
+                        this.playCollectSound();
+                    }
+                });
+            }
+
+            isColliding(rect1, rect2) {
+                return !(rect1.right < rect2.left || 
+                        rect1.left > rect2.right || 
+                        rect1.bottom < rect2.top || 
+                        rect1.top > rect2.bottom);
+            }
+
+            flashScreen() {
+                this.gameCanvas.style.filter = 'hue-rotate(180deg)';
+                setTimeout(() => {
+                    this.gameCanvas.style.filter = '';
+                }, 200);
+            }
+
+            playCollectSound() {
+                // Visual feedback for collecting items
+                const collectEffect = document.createElement('div');
+                collectEffect.style.position = 'absolute';
+                collectEffect.style.left = '50%';
+                collectEffect.style.top = '50%';
+                collectEffect.style.transform = 'translate(-50%, -50%)';
+                collectEffect.style.color = '#ffff00';
+                collectEffect.style.fontSize = '24px';
+                collectEffect.style.fontWeight = 'bold';
+                collectEffect.style.zIndex = '30';
+                collectEffect.textContent = '+50';
+                collectEffect.style.animation = 'fadeUp 1s ease-out forwards';
+                
+                this.gameCanvas.appendChild(collectEffect);
+                setTimeout(() => collectEffect.remove(), 1000);
+            }
+
+            updateLevel() {
+                const newLevel = Math.floor(this.score / 500) + 1;
+                if (newLevel > this.level) {
+                    this.level = newLevel;
+                    this.gameSpeed = Math.min(6, 3 + (this.level - 1) * 0.5);
+                    this.spawnRate = Math.min(0.05, 0.02 + (this.level - 1) * 0.005);
+                    this.showLevelUp();
+                }
+            }
+
+            showLevelUp() {
+                const levelUpMsg = document.createElement('div');
+                levelUpMsg.style.position = 'absolute';
+                levelUpMsg.style.top = '50%';
+                levelUpMsg.style.left = '50%';
+                levelUpMsg.style.transform = 'translate(-50%, -50%)';
+                levelUpMsg.style.color = '#00ffff';
+                levelUpMsg.style.fontSize = '32px';
+                levelUpMsg.style.fontWeight = 'bold';
+                levelUpMsg.style.zIndex = '40';
+                levelUpMsg.style.textShadow = '0 0 20px rgba(0, 255, 255, 1)';
+                levelUpMsg.textContent = `LEVEL ${this.level}`;
+                
+                this.gameCanvas.appendChild(levelUpMsg);
+                setTimeout(() => levelUpMsg.remove(), 2000);
+            }
+
+            updateHUD() {
+                document.getElementById('score').textContent = this.score;
+                document.getElementById('lives').textContent = this.lives;
+                document.getElementById('level').textContent = this.level;
+            }
+
+            gameOver() {
+                this.gameRunning = false;
+                document.getElementById('finalScore').textContent = this.score;
+                document.getElementById('gameOver').style.display = 'block';
+                
+                // Clean up game objects
+                this.enemies.forEach(enemy => enemy.remove());
+                this.collectibles.forEach(collectible => collectible.remove());
+                this.enemies = [];
+                this.collectibles = [];
+            }
+
+            restart() {
+                this.score = 0;
+                this.lives = 3;
+                this.level = 1;
+                this.gameSpeed = 3;
+                this.spawnRate = 0.02;
+                this.collectibleRate = 0.01;
+                this.playerPosition = 400;
+                this.playerCar.style.left = this.playerPosition + 'px';
+                
+                document.getElementById('gameOver').style.display = 'none';
+                this.updateHUD();
+                this.start();
+            }
+        }
+
+        // Global game instance
+        let game;
+
+        function startGame() {
+            document.getElementById('startScreen').style.display = 'none';
+            game = new NeonRushGame();
+            game.start();
+        }
+
+        function restartGame() {
+            game.restart();
+        }
+
+        // Add CSS animation for fade up effect
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fadeUp {
+                0% { opacity: 1; transform: translate(-50%, -50%) translateY(0); }
+                100% { opacity: 0; transform: translate(-50%, -50%) translateY(-50px); }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>
