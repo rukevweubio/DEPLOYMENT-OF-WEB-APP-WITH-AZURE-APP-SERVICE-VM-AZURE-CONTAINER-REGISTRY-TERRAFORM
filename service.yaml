@@ -1,0 +1,13 @@
+# service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: car-racing-service
+spec:
+  type: ClusterIP
+  selector:
+    app: car-racing
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
