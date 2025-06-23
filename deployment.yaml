@@ -3,6 +3,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: car-racing-app
+  namespace: argocd
   labels:
     app: car-racing
 spec:
